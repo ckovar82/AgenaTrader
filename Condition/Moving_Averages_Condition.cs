@@ -12,11 +12,9 @@ using AgenaTrader.Plugins;
 using AgenaTrader.Helper;
 
 /// <summary>
-/// Version: 1.1
+/// Version: 1.3
 /// -------------------------------------------------------------------------
-/// Simon Pucher 2016
-/// -------------------------------------------------------------------------
-/// Inspired by https://www.youtube.com/watch?v=Qj_6DFTNfjE
+/// Simon Pucher 2017
 /// -------------------------------------------------------------------------
 /// ****** Important ******
 /// To compile this script without any error you also need access to the utility indicator to use global source code elements.
@@ -31,9 +29,11 @@ namespace AgenaTrader.UserCode
 	[IsStopAttribute(false)]
 	[IsTargetAttribute(false)]
 	[OverrulePreviousStopPrice(false)]
-	public class Lonely_Warrior_Condition : UserScriptedCondition
+	public class Moving_Averages_Condition : UserScriptedCondition
 	{
         #region Variables
+        private int _candles = 14;
+        private Stack<DateTime> lastsignals;
 
         private Color _plot0color = Const.DefaultIndicatorColor;
         private int _plot0width = Const.DefaultLineWidth;
@@ -55,12 +55,44 @@ namespace AgenaTrader.UserCode
             IsOverlay = false;
 			CalculateOnClosedBar = true;
 
-            this.RequiredBarsCount = 20;
+            this.RequiredBarsCount = 200;
         }
 
 		protected override void OnCalculate()
 		{
-            Occurred.Set(LeadIndicator.Lonely_Warrior_Indicator()[0]);
+
+            if (ProcessingBarIndex == 0)
+            {
+                lastsignals = new Stack<DateTime>();
+            }
+
+            bool therewasasignal = false;
+            //if (Low[0] < SMA(200)[0] && SMA(50)[0] >= SMA(100)[0] && SMA(100)[0] >= SMA(200)[0]  && Close[0] > SuperTrend(SuperTrendMAType.HMA, SuperTrendMode.ATR, 14, 2.618, 14).UpTrend[0])
+            //if (Low[0] < SMA(200)[0] && SMA(50)[0] >= SMA(100)[0] && Close[0] > SuperTrend(SuperTrendMAType.HMA, SuperTrendMode.ATR, 14, 2.618, 14).UpTrend[0])
+            //if (Low[0] < SMA(200)[0] && SMA(50)[0] >= SMA(100)[0] && Close[0] > SuperTrend(SuperTrendMAType.SMA, SuperTrendMode.ATR, 50, 2.618, 50).UpTrend[0])
+            if (Low[0] < SMA(200)[0] && SMA(50)[0] >= SMA(100)[0] && Close[0] > SuperTrend(SuperTrendMAType.SMA, SuperTrendMode.ATR, 200, 2.618, 200).UpTrend[0])
+            {
+                therewasasignal = true;
+            }
+            double thevalue = 0;
+            if (therewasasignal)
+            {
+                thevalue = 1;
+                AddChartArrowUp("ArrowLong_Entry" + +Bars[0].Time.Ticks, this.IsAutoAdjustableScale, 0, Bars[0].Low, Color.Green);
+                lastsignals.Push(Time[0]);
+            }
+            else
+            {
+                if (lastsignals != null && lastsignals.Count > 0 && lastsignals.Peek() >= Time[this.Candles - 1])
+                {
+                    AddChartArrowUp("ArrowLong_Echo_Entry" + +Bars[0].Time.Ticks, this.IsAutoAdjustableScale, 0, Bars[0].Low, Color.LightGreen);
+                    thevalue = 0.5;
+                }
+            }
+
+        
+
+            Occurred.Set(thevalue);
 
             PlotColors[0][0] = this.Plot0Color;
             OutputDescriptors[0].PenStyle = this.Dash0Style;
@@ -74,14 +106,14 @@ namespace AgenaTrader.UserCode
 
         public override string ToString()
         {
-            return "Lonely Warrior (C)";
+            return "Moving Averages (C)";
         }
 
         public override string DisplayName
         {
             get
             {
-                return "Lonely Warrior (C)";
+                return "Moving Averages (C)";
             }
         }
 
@@ -105,6 +137,17 @@ namespace AgenaTrader.UserCode
 		{
 			return new[]{Entry};
 		}
+
+        /// <summary>
+        /// </summary>
+        [Description("The script show a signal if the gap was during the last x candles.")]
+        [Category("Parameters")]
+        [DisplayName("Candles")]
+        public int Candles
+        {
+            get { return _candles; }
+            set { _candles = value; }
+        }
 
         /// <summary>
         /// </summary>

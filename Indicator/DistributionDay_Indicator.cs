@@ -10,39 +10,59 @@ using AgenaTrader.API;
 using AgenaTrader.Custom;
 using AgenaTrader.Plugins;
 using AgenaTrader.Helper;
+using System.Windows.Forms;
+using System.Windows.Forms.VisualStyles;
 
 namespace AgenaTrader.UserCode
 {
-	/// <summary>
-/// Version: 1.1.1
-/// -------------------------------------------------------------------------
-/// Simon Pucher 2016
-/// -------------------------------------------------------------------------
-/// ****** Important ******
-/// To compile this script without any error you also need access to the utility indicator to use these global source code elements.
-/// You will find this indicator on GitHub: https://raw.githubusercontent.com/simonpucher/AgenaTrader/master/Utilities/GlobalUtilities_Utility.cs
-/// -------------------------------------------------------------------------
-/// Namespace holds all indicators and is required. Do not change it.
-/// </summary>
-    [Description("Take your money and run when the smart money start the distribution.")]
+    /// <summary>
+    /// Version: 1.2.0
+    /// -------------------------------------------------------------------------
+    /// Simon Pucher 2016
+    /// -------------------------------------------------------------------------
+    /// http://www.optionstradingiq.com/distribution-days-can-foreshadow-a-correction/
+    /// http://ratingstocks.com/index-distribution
+    /// -------------------------------------------------------------------------
+    /// ****** Important ******
+    /// To compile this script without any error you also need access to the utility indicator to use these global source code elements.
+    /// You will find this indicator on GitHub: https://raw.githubusercontent.com/simonpucher/AgenaTrader/master/Utilities/GlobalUtilities_Utility.cs
+    /// -------------------------------------------------------------------------
+    /// Namespace holds all indicators and is required. Do not change it.
+    /// </summary>
+    /// 
+    [Description("Take your money and run when smart money start the distribution.")]
 	public class DistributionDay_Indicator : UserIndicator
 	{
+        public enum Enum_Volume_Calucation
+        {
+            VolumeIsGreaterThanYesterday = 0,
+            VolumeisGreaterThantheEMAOfTheLastXCandles = 1
+        }
+
         private Queue<DateTime> _distributionlist = null;
         private int _period = 25;
         private double _percent = 0.2;
         private bool _showdistributiondayarrows = true;
+        private bool _showdistributiondaylabel = true;
         private int _distributiondaycount = 4;
+
+        private double _volumepercent = 100.0;
+
+        private Enum_Volume_Calucation _volume_calculation = Enum_Volume_Calucation.VolumeisGreaterThantheEMAOfTheLastXCandles;
+
+        private int _ema_period = 30;
+
+        private Color _color_long_signal_distribution = Color.DarkViolet;
+        private Color _color_long_signal_distribution_strong = Color.Violet;
 
         protected override void OnInit()
 		{
-			//Add(new Plot(Color.FromKnownColor(KnownColor.Orange), "MyPlot1"));
 			CalculateOnClosedBar = false;
             this.IsOverlay = true;
 		}
 
         protected override void OnCalculate()
         {
-            //http://www.optionstradingiq.com/distribution-days-can-foreshadow-a-correction/
 
             //Init list on startup
             if (ProcessingBarIndex == 0)
@@ -56,39 +76,49 @@ namespace AgenaTrader.UserCode
                 this._distributionlist.Dequeue();
             }
 
-            //Draw Disrtibution Arrow.
-            if (Volume[0] > Volume[1] && ((Close[1] - Close[0]) / Close[1]) > (this.Percent / 100.0))
+            bool volumespike = false;
+            //Volume Calculation
+            switch (this.Volume_Calculation)
             {
-               
+                case Enum_Volume_Calucation.VolumeIsGreaterThanYesterday:
+                    if (Volume[0] > (Volume[1] * (this.VolumePercent/100.0)) ) volumespike = true;
+                    break;
+                case Enum_Volume_Calucation.VolumeisGreaterThantheEMAOfTheLastXCandles:
+                    if (Volume[0] > EMA(Volume, this.EMA_Period)[0]) volumespike = true;
+                    break;
+            }
+
+            //Draw Distribution Arrow.
+            if (volumespike && ((Close[1] - Close[0]) / Close[1]) > (this.Percent / 100.0))
+            {
                 this._distributionlist.Enqueue(Time[0]);
 
+                //Draw the indicator
                 if (ShowDistributionDayArrows)
                 {
-                    AddChartArrowDown(ProcessingBarIndex.ToString(), true, 0, High[0], Color.LightPink);
-                }
+                    Color color = Color.Black;
+                    if (this._distributionlist.Count > this.DistributionDayCount)
+                    {
+                        color = ColorLongSignalDistribution;
+                        AddChartArrowDown(ProcessingBarIndex.ToString(), true, 0, High[0], ColorLongSignalDistribution);
+                    }
+                    else
+                    {
+                        color = ColorLongSignalDistributionStrong;
+                        AddChartArrowDown(ProcessingBarIndex.ToString(), true, 0, High[0], ColorLongSignalDistributionStrong);
+                    }
 
-                //Draw the indicator
-                if (this._distributionlist.Count > this.DistributionDayCount)
-                {
-                    //MyPlot1.Set(1);
-                    AddChartArrowDown(ProcessingBarIndex.ToString(), true, 0, High[0], Color.DeepPink);
+                    if (this.ShowDistributionDayLabel)
+                    {
+                        AddChartText("dday" + Time[0], true, "DD", Time[0], Low[0], 0, color, new Font("Arial", 8, FontStyle.Bold), StringAlignment.Far, HorizontalAlignment.Center, VerticalAlignment.Top, color, Color.White, 255);
+                    }
                 }
-               
-            }
-            else
-            {
-                //MyPlot1.Set(0);
+                
             }
 		}
 
 		#region Properties
 
-		//[Browsable(false)]
-		//[XmlIgnore()]
-		//public DataSeries MyPlot1
-		//{
-		//	get { return Outputs[0]; }
-		//}
 
         /// <summary>
         /// </summary>
@@ -129,127 +159,85 @@ namespace AgenaTrader.UserCode
             set { _showdistributiondayarrows = value; }
         }
 
+        [Description("Show all distribution day labels.")]
+        [Category("Parameters")]
+        [DisplayName("Show all labels")]
+        public bool ShowDistributionDayLabel
+        {
+            get { return _showdistributiondaylabel; }
+            set { _showdistributiondaylabel = value; }
+        }
+
+        /// <summary>
+        /// </summary>
+        [Description("Select Color for the distribution day signal.")]
+        [Category("Color")]
+        [DisplayName("Color Distribution Day")]
+        public Color ColorLongSignalDistribution
+        {
+            get { return _color_long_signal_distribution; }
+            set { _color_long_signal_distribution = value; }
+        }
+
+
+        // Serialize Color object
+        [Browsable(false)]
+        public string ColorLongSignalDistributionSerialize
+        {
+            get { return SerializableColor.ToString(_color_long_signal_distribution); }
+            set { _color_long_signal_distribution = SerializableColor.FromString(value); }
+        }
+
+        /// <summary>
+        /// </summary>
+        [Description("Select Color for the distribution day signal.")]
+        [Category("Color")]
+        [DisplayName("Color Distribution Day")]
+        public Color ColorLongSignalDistributionStrong
+        {
+            get { return _color_long_signal_distribution_strong; }
+            set { _color_long_signal_distribution_strong = value; }
+        }
+        // Serialize Color object
+        [Browsable(false)]
+        public string ColorLongSignalDistributionStrongSerialize
+        {
+            get { return SerializableColor.ToString(_color_long_signal_distribution_strong); }
+            set { _color_long_signal_distribution_strong = SerializableColor.FromString(value); }
+
+        }
+
+
+        [Description("Percent of yesterday volume.")]
+        [Category("Parameters")]
+        [DisplayName("Volume Percent")]
+        public double VolumePercent
+        {
+            get { return _volumepercent; }
+            set { _volumepercent = value; }
+        }
+
+
+        [Description("Select the type of volume calculation.")]
+        [Category("Volume")]
+        [DisplayName("Volume Calculation")]
+        public Enum_Volume_Calucation Volume_Calculation
+        {
+            get { return _volume_calculation; }
+            set { _volume_calculation = value; }
+        }
+
+        [Description("Select the period of the EMA volume calculation.")]
+        [Category("Volume")]
+        [DisplayName("Volume Calculation Period")]
+        public int EMA_Period
+        {
+            get { return _ema_period; }
+            set { _ema_period = value; }
+        }
+
+        
+
         #endregion
     }
 }
-#region AgenaTrader Automaticaly Generated Code. Do not change it manualy
-
-namespace AgenaTrader.UserCode
-{
-	#region Indicator
-
-	public partial class UserIndicator
-	{
-		/// <summary>
-		/// Take your money and run when the smart money start the distribution.
-		/// </summary>
-		public DistributionDay_Indicator DistributionDay_Indicator(System.Int32 period, System.Int32 distributionDayCount, System.Double percent, System.Boolean showDistributionDayArrows)
-        {
-			return DistributionDay_Indicator(InSeries, period, distributionDayCount, percent, showDistributionDayArrows);
-		}
-
-		/// <summary>
-		/// Take your money and run when the smart money start the distribution.
-		/// </summary>
-		public DistributionDay_Indicator DistributionDay_Indicator(IDataSeries input, System.Int32 period, System.Int32 distributionDayCount, System.Double percent, System.Boolean showDistributionDayArrows)
-		{
-			var indicator = CachedCalculationUnits.GetCachedIndicator<DistributionDay_Indicator>(input, i => i.Period == period && i.DistributionDayCount == distributionDayCount && Math.Abs(i.Percent - percent) <= Double.Epsilon && i.ShowDistributionDayArrows == showDistributionDayArrows);
-
-			if (indicator != null)
-				return indicator;
-
-			indicator = new DistributionDay_Indicator
-						{
-							RequiredBarsCount = RequiredBarsCount,
-							CalculateOnClosedBar = CalculateOnClosedBar,
-							InSeries = input,
-							Period = period,
-							DistributionDayCount = distributionDayCount,
-							Percent = percent,
-							ShowDistributionDayArrows = showDistributionDayArrows
-						};
-			indicator.SetUp();
-
-			CachedCalculationUnits.AddIndicator2Cache(indicator);
-
-			return indicator;
-		}
-	}
-
-	#endregion
-
-	#region Strategy
-
-	public partial class UserStrategy
-	{
-		/// <summary>
-		/// Take your money and run when the smart money start the distribution.
-		/// </summary>
-		public DistributionDay_Indicator DistributionDay_Indicator(System.Int32 period, System.Int32 distributionDayCount, System.Double percent, System.Boolean showDistributionDayArrows)
-		{
-			return LeadIndicator.DistributionDay_Indicator(InSeries, period, distributionDayCount, percent, showDistributionDayArrows);
-		}
-
-		/// <summary>
-		/// Take your money and run when the smart money start the distribution.
-		/// </summary>
-		public DistributionDay_Indicator DistributionDay_Indicator(IDataSeries input, System.Int32 period, System.Int32 distributionDayCount, System.Double percent, System.Boolean showDistributionDayArrows)
-		{
-			if (IsInInit && input == null)
-				throw new ArgumentException("You only can access an indicator with the default input/bar series from within the 'OnInit()' method");
-
-			return LeadIndicator.DistributionDay_Indicator(input, period, distributionDayCount, percent, showDistributionDayArrows);
-		}
-	}
-
-	#endregion
-
-	#region Column
-
-	public partial class UserColumn
-	{
-		/// <summary>
-		/// Take your money and run when the smart money start the distribution.
-		/// </summary>
-		public DistributionDay_Indicator DistributionDay_Indicator(System.Int32 period, System.Int32 distributionDayCount, System.Double percent, System.Boolean showDistributionDayArrows)
-		{
-			return LeadIndicator.DistributionDay_Indicator(InSeries, period, distributionDayCount, percent, showDistributionDayArrows);
-		}
-
-		/// <summary>
-		/// Take your money and run when the smart money start the distribution.
-		/// </summary>
-		public DistributionDay_Indicator DistributionDay_Indicator(IDataSeries input, System.Int32 period, System.Int32 distributionDayCount, System.Double percent, System.Boolean showDistributionDayArrows)
-		{
-			return LeadIndicator.DistributionDay_Indicator(input, period, distributionDayCount, percent, showDistributionDayArrows);
-		}
-	}
-
-	#endregion
-
-	#region Scripted Condition
-
-	public partial class UserScriptedCondition
-	{
-		/// <summary>
-		/// Take your money and run when the smart money start the distribution.
-		/// </summary>
-		public DistributionDay_Indicator DistributionDay_Indicator(System.Int32 period, System.Int32 distributionDayCount, System.Double percent, System.Boolean showDistributionDayArrows)
-		{
-			return LeadIndicator.DistributionDay_Indicator(InSeries, period, distributionDayCount, percent, showDistributionDayArrows);
-		}
-
-		/// <summary>
-		/// Take your money and run when the smart money start the distribution.
-		/// </summary>
-		public DistributionDay_Indicator DistributionDay_Indicator(IDataSeries input, System.Int32 period, System.Int32 distributionDayCount, System.Double percent, System.Boolean showDistributionDayArrows)
-		{
-			return LeadIndicator.DistributionDay_Indicator(input, period, distributionDayCount, percent, showDistributionDayArrows);
-		}
-	}
-
-	#endregion
-
-}
-
-#endregion

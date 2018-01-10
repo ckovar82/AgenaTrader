@@ -12,7 +12,7 @@ using AgenaTrader.Plugins;
 using AgenaTrader.Helper;
 
 /// <summary>
-/// Version: 1.0.1
+/// Version: 1.1.0
 /// -------------------------------------------------------------------------
 /// Simon Pucher 2017
 /// -------------------------------------------------------------------------
@@ -27,40 +27,94 @@ namespace AgenaTrader.UserCode
 	[Description("Draw the candle of the higher timeframe on the chart.")]
 	public class HigherTimeFrameCandle_Indicator : UserIndicator
 	{
-        private static readonly TimeFrame TF_Day = new TimeFrame(DatafeedHistoryPeriodicity.Day, 1);
-        private static readonly TimeFrame TF_Week = new TimeFrame(DatafeedHistoryPeriodicity.Week, 1);
+        //private static readonly TimeFrame TF_Day = new TimeFrame(DatafeedHistoryPeriodicity.Day, 1);
+        //private static readonly TimeFrame TF_Week = new TimeFrame(DatafeedHistoryPeriodicity.Week, 1);
+        //private static readonly TimeFrame TF_Month = new TimeFrame(DatafeedHistoryPeriodicity.Month, 1);
+
+
+        private DatafeedHistoryPeriodicity _datafeedhistoryperidocity = DatafeedHistoryPeriodicity.Day;
+        private int _periodicityvalue = 1;
+        private int _maxcandles = 0;
+
+
+        private Color _color_long_signal_background = Const.DefaultArrowLongColor;
+        private Color _color_short_signal_background = Const.DefaultArrowShortColor;
+        private int _opacity_signal = 25;
 
         protected override void OnBarsRequirements()
         {
-            Add(TF_Day);
+            //Add(TF_Day);
+            //Add(TF_Week);
+            //Add(TF_Month);
+
+            Add(new TimeFrame(this.DF_DatafeedHistoryPeriodicity, this.DF_periodicityvalues));
         }
 
         protected override void OnInit()
 		{
-			//Add(new Plot(Color.FromKnownColor(KnownColor.Orange), "MyPlot1"));
+			//Add(new OutputDescriptor(Color.FromKnownColor(KnownColor.Orange), "MyPlot1"));
 			IsOverlay = true;
-            CalculateOnClosedBar = true;
+            CalculateOnClosedBar = false;
+            
         }
 
-		protected override void OnCalculate()
-		{
-  
+        protected override void OnCalculate()
+        {
+            //Always show the day candle
+            int _timeseriescount = 1;
+
             if (ProcessingBarSeriesIndex == 1)
             {
-                Color _col = Color.Gray;
-                if (Opens[1][0] > Closes[1][0])
+                ////Change time frame to higher candles
+                //if (this.TimeFrame.Periodicity == DatafeedHistoryPeriodicity.Day)
+                //{
+                //    _timeseriescount = 2;
+                //}
+                //else if (this.TimeFrame.Periodicity == DatafeedHistoryPeriodicity.Week)
+                //{
+                //    _timeseriescount = 3;
+                //}
+
+                ////Drawing
+                //Color _col = Color.Gray;
+                //if (Opens[_timeseriescount][1] > Closes[_timeseriescount][1])
+                //{
+                //    _col = this.ColorShortSignalBackground;
+                //}
+                //else if (Opens[_timeseriescount][1] < Closes[_timeseriescount][1])
+                //{
+                //    _col = this.ColorLongSignalBackground;
+                //}
+
+
+                //DateTime mystart = Times[_timeseriescount][1];
+                //DateTime myend = Times[_timeseriescount][0].AddSeconds(-1);
+                //AddChartRectangle("HTFCandle-" + Times[_timeseriescount][1], true, mystart, Lows[_timeseriescount][1], myend, Highs[_timeseriescount][1], _col, _col, this.OpacitySignal);
+
+
+                //Drawing
+                if (MaxCandles == 0 || Closes[1].Count - ProcessingBarIndexes[1] <= this.MaxCandles)
                 {
-                    _col = Color.Red;
+                    Color _col = Color.Gray;
+                    if (Opens[_timeseriescount][1] > Closes[_timeseriescount][1])
+                    {
+                        _col = this.ColorShortSignalBackground;
+                    }
+                    else if (Opens[_timeseriescount][1] < Closes[_timeseriescount][1])
+                    {
+                        _col = this.ColorLongSignalBackground;
+                    }
+
+
+                    DateTime mystart = Times[_timeseriescount][1];
+                    DateTime myend = Times[_timeseriescount][0].AddSeconds(-1);
+                    AddChartRectangle("HTFCandle-" + Times[_timeseriescount][1], true, mystart, Lows[_timeseriescount][1], myend, Highs[_timeseriescount][1], _col, _col, this.OpacitySignal);
+
                 }
-                else if (Opens[1][0] < Closes[1][0])
-                {
-                    _col = Color.Green;
-                }
-                //MyPlot1.Set(InSeries[0]);
-                
-                AddChartRectangle("HTFCandle-" + ProcessingBarIndex, true, Times[1][0], Lows[1][0], Times[1][0].AddSeconds(TimeFrames[1].GetSeconds()), Highs[1][0], _col, _col, 50);
+
+
             }
-            
+
         }
 
         public override string ToString()
@@ -85,123 +139,103 @@ namespace AgenaTrader.UserCode
 			get { return Outputs[0]; }
 		}
 
-		#endregion
-	}
-}
-#region AgenaTrader Automaticaly Generated Code. Do not change it manually
 
-namespace AgenaTrader.UserCode
-{
-	#region Indicator
-
-	public partial class UserIndicator
-	{
-		/// <summary>
-		/// Draw the candle of the higher timeframe on the chart.
-		/// </summary>
-		public HigherTimeFrameCandle_Indicator HigherTimeFrameCandle_Indicator()
+        [Description("Select the timeframe of the periodicity.")]
+        [Category("Parameters")]
+        [DisplayName("HTF TimeFrame")]
+        public DatafeedHistoryPeriodicity DF_DatafeedHistoryPeriodicity
         {
-			return HigherTimeFrameCandle_Indicator(InSeries);
-		}
+            get { return _datafeedhistoryperidocity; }
+            set
+            {
+                _datafeedhistoryperidocity = value;
+            }
+        }
 
-		/// <summary>
-		/// Draw the candle of the higher timeframe on the chart.
-		/// </summary>
-		public HigherTimeFrameCandle_Indicator HigherTimeFrameCandle_Indicator(IDataSeries input)
-		{
-			var indicator = CachedCalculationUnits.GetCachedIndicator<HigherTimeFrameCandle_Indicator>(input);
+        [Description("Select the value of the periodicity.")]
+        [Category("Parameters")]
+        [DisplayName("HTF Value")]
+        public int DF_periodicityvalues
+        {
+            get { return _periodicityvalue; }
+            set
+            {
+                _periodicityvalue = value;
+            }
+        }
 
-			if (indicator != null)
-				return indicator;
 
-			indicator = new HigherTimeFrameCandle_Indicator
-						{
-							RequiredBarsCount = RequiredBarsCount,
-							CalculateOnClosedBar = CalculateOnClosedBar,
-							InSeries = input
-						};
-			indicator.SetUp();
+        /// <summary>
+        /// </summary>
+        [Description("Select opacity for the background in percent.")]
+        [Category("Background")]
+        [DisplayName("Opacity Background %")]
+        public int OpacitySignal
+        {
+            get { return _opacity_signal; }
+            set
+            {
+                if (value < 0) value = 0;
+                if (value > 100) value = 100;
+                _opacity_signal = value;
+            }
+        }
 
-			CachedCalculationUnits.AddIndicator2Cache(indicator);
+        
+        /// <summary>
+        /// </summary>
+        [Description("Select the number of max. candles (0 = show all candles in the higher timeframe, 3 = show the last 3 higher timeframe candles)")]
+        [Category("Parameters")]
+        [DisplayName("Max Candles")]
+        public int MaxCandles
+        {
+            get { return _maxcandles; }
+            set
+            {
+                _maxcandles = value;
+            }
+        }
 
-			return indicator;
-		}
-	}
 
-	#endregion
+        /// <summary>
+        /// </summary>
+        [Description("Select Color for the background in long setup.")]
+        [Category("Background")]
+        [DisplayName("Color Background Long")]
+        public Color ColorLongSignalBackground
+        {
+            get { return _color_long_signal_background; }
+            set { _color_long_signal_background = value; }
+        }
 
-	#region Strategy
 
-	public partial class UserStrategy
-	{
-		/// <summary>
-		/// Draw the candle of the higher timeframe on the chart.
-		/// </summary>
-		public HigherTimeFrameCandle_Indicator HigherTimeFrameCandle_Indicator()
-		{
-			return LeadIndicator.HigherTimeFrameCandle_Indicator(InSeries);
-		}
+        // Serialize Color object
+        [Browsable(false)]
+        public string ColorLongSignalBackgroundSerialize
+        {
+            get { return SerializableColor.ToString(_color_long_signal_background); }
+            set { _color_long_signal_background = SerializableColor.FromString(value); }
+        }
 
-		/// <summary>
-		/// Draw the candle of the higher timeframe on the chart.
-		/// </summary>
-		public HigherTimeFrameCandle_Indicator HigherTimeFrameCandle_Indicator(IDataSeries input)
-		{
-			if (IsInInit && input == null)
-				throw new ArgumentException("You only can access an indicator with the default input/bar series from within the 'OnInit()' method");
+        /// <summary>
+        /// </summary>
+        [Description("Select Color for the background in short setup.")]
+        [Category("Background")]
+        [DisplayName("Color Background Short")]
+        public Color ColorShortSignalBackground
+        {
+            get { return _color_short_signal_background; }
+            set { _color_short_signal_background = value; }
+        }
+        // Serialize Color object
+        [Browsable(false)]
+        public string ColorShortSignalBackgroundSerialize
+        {
+            get { return SerializableColor.ToString(_color_short_signal_background); }
+            set { _color_short_signal_background = SerializableColor.FromString(value); }
+        }
 
-			return LeadIndicator.HigherTimeFrameCandle_Indicator(input);
-		}
-	}
 
-	#endregion
-
-	#region Column
-
-	public partial class UserColumn
-	{
-		/// <summary>
-		/// Draw the candle of the higher timeframe on the chart.
-		/// </summary>
-		public HigherTimeFrameCandle_Indicator HigherTimeFrameCandle_Indicator()
-		{
-			return LeadIndicator.HigherTimeFrameCandle_Indicator(InSeries);
-		}
-
-		/// <summary>
-		/// Draw the candle of the higher timeframe on the chart.
-		/// </summary>
-		public HigherTimeFrameCandle_Indicator HigherTimeFrameCandle_Indicator(IDataSeries input)
-		{
-			return LeadIndicator.HigherTimeFrameCandle_Indicator(input);
-		}
-	}
-
-	#endregion
-
-	#region Scripted Condition
-
-	public partial class UserScriptedCondition
-	{
-		/// <summary>
-		/// Draw the candle of the higher timeframe on the chart.
-		/// </summary>
-		public HigherTimeFrameCandle_Indicator HigherTimeFrameCandle_Indicator()
-		{
-			return LeadIndicator.HigherTimeFrameCandle_Indicator(InSeries);
-		}
-
-		/// <summary>
-		/// Draw the candle of the higher timeframe on the chart.
-		/// </summary>
-		public HigherTimeFrameCandle_Indicator HigherTimeFrameCandle_Indicator(IDataSeries input)
-		{
-			return LeadIndicator.HigherTimeFrameCandle_Indicator(input);
-		}
-	}
-
-	#endregion
-
+        #endregion
+    }
 }
-
-#endregion
