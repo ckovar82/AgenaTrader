@@ -93,7 +93,7 @@ namespace AgenaTrader.UserCode
         }
 
         [Description("Start of the trading break. (e.g. 12:00:00)")]
-        [Category("Parameters")]
+        [InputParameter]
         [DisplayName("Start")]
         public string Start
         {
@@ -102,7 +102,7 @@ namespace AgenaTrader.UserCode
         }
 
         //[Description("Start of the trading break. (e.g. 12:00:00)")]
-        //[Category("Parameters")]
+        //[InputParameter]
         //[DisplayName("Start")]
         //public TimeSpan Start
         //{
@@ -118,7 +118,7 @@ namespace AgenaTrader.UserCode
         //}
 
         [Description("End of the trading break. (e.g. 13:00:00)")]
-        [Category("Parameters")]
+        [InputParameter]
         [DisplayName("End")]
         public string End
         {
@@ -127,7 +127,7 @@ namespace AgenaTrader.UserCode
         }
 
         //[Description("End of the trading break. (e.g. 13:00:00)")]
-        //[Category("Parameters")]
+        //[InputParameter]
         //[DisplayName("End")]
         //public TimeSpan End
         //{

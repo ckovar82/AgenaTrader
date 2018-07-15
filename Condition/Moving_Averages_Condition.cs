@@ -141,7 +141,7 @@ namespace AgenaTrader.UserCode
         /// <summary>
         /// </summary>
         [Description("The script show a signal if the gap was during the last x candles.")]
-        [Category("Parameters")]
+        [InputParameter]
         [DisplayName("Candles")]
         public int Candles
         {

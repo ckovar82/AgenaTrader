@@ -132,7 +132,7 @@ namespace AgenaTrader.UserCode
 
         #region Properties
         [Description("Testlauf")]
-        [Category("Parameters")]
+        [InputParameter]
         [DisplayName("Testlauf")]
         public bool Testlauf
         {

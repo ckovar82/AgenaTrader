@@ -82,7 +82,7 @@ namespace AgenaTrader.UserCode
         //private string _instrument = "AAPL";
 
         //[Description("First Symbol to compare")]
-        //[Category("Parameters")]
+        //[InputParameter]
         //[DisplayNameAttribute("1st Symbol")]
         //public string Symbol
         //{
@@ -93,7 +93,7 @@ namespace AgenaTrader.UserCode
         private string _instrument_2 = "AAPL";
 
         [Description("First Symbol to compare")]
-        [Category("Parameters")]
+        [InputParameter]
         [DisplayNameAttribute("2nd Symbol")]
         public string Symbol_2
         {

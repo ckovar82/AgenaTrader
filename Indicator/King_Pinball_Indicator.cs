@@ -100,7 +100,7 @@ namespace AgenaTrader.UserCode
         /// <summary>
         /// </summary>
         [Description("Bollinger Band period.")]
-        [Category("Parameters")]
+        [InputParameter]
         [DisplayName("BB period")]
         public int Bollinger_Period
         {
@@ -114,7 +114,7 @@ namespace AgenaTrader.UserCode
         /// <summary>
         /// </summary>
         [Description("Bollinger Band standard deviation")]
-        [Category("Parameters")]
+        [InputParameter]
         [DisplayName("BB stddev")]
         public double Bollinger_stddev
         {
@@ -128,7 +128,7 @@ namespace AgenaTrader.UserCode
         /// <summary>
         /// </summary>
         [Description("Bollinger Band fast")]
-        [Category("Parameters")]
+        [InputParameter]
         [DisplayName("MACD fast")]
         public int MACD_Fast
         {
@@ -142,7 +142,7 @@ namespace AgenaTrader.UserCode
         /// <summary>
         /// </summary>
         [Description("Bollinger Band slow")]
-        [Category("Parameters")]
+        [InputParameter]
         [DisplayName("MACD slow")]
         public int MACD_Slow
         {
@@ -156,7 +156,7 @@ namespace AgenaTrader.UserCode
         /// <summary>
         /// </summary>
         [Description("Bollinger Band smooth")]
-        [Category("Parameters")]
+        [InputParameter]
         [DisplayName("MACD smooth")]
         public int MACD_Smooth
         {
